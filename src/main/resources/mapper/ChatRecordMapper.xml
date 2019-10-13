@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.socket.dao.ChatRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.example.socket.entity.ChatRecord">
+
+    </resultMap>
+
+    <select id="list" resultType="com.example.socket.entity.ChatRecord">
+        select * from chat_record
+    </select>
+
+    <insert id="insert" parameterType="com.example.socket.entity.ChatRecord">
+        insert into chat_record (`send_user`,`send_msg`,ip_addr,city,uid) value (#{record.sendUser},#{record.sendMsg},#{record.ipAddr},#{record.city},#{record.uid})
+    </insert>
+
+</mapper>
