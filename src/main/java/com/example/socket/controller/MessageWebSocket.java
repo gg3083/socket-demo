@@ -2,6 +2,7 @@ package com.example.socket.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.example.socket.service.ChatRecordService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Component
 @ServerEndpoint(value = "/messageSocket/{userId}")
+@Slf4j
 public class MessageWebSocket {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageWebSocket.class);
@@ -142,7 +144,7 @@ public class MessageWebSocket {
      * 实现服务器主动推送
      */
     public void sendMessage(String message, String toUserId) throws IOException {
-        if(toUserId != null && !StringUtils.isEmpty(message.trim())){
+        if(!StringUtils.isEmpty(message.trim())){
             userSessionMap.forEach( (key,value) ->{
                 System.err.println(key + "_" +value);
                 ConcurrentLinkedQueue<String> sessionIds = value;
@@ -198,6 +200,10 @@ public class MessageWebSocket {
 //		InetSocketAddress addr = (InetSocketAddress) getFieldInstance(async,"base#sos#socketWrapper#socket#sc#remoteAddress");
         //在Tomcat 8.5以上版本有效
         InetSocketAddress addr = (InetSocketAddress) getFieldInstance(async,"base#socketWrapper#socket#sc#remoteAddress");
+        logger.info("addr: {}",addr);
+        logger.info("addr-string: {}",addr.toString());
+        logger.info("addr-address: {}",addr.getAddress());
+        logger.info("addr-hostname: {}",addr.getAddress().getHostName());
         return addr == null?"127.0.0.1": addr.getAddress().getHostAddress();
     }
 

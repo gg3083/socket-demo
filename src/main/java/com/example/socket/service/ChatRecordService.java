@@ -5,6 +5,7 @@ import com.example.socket.entity.ChatRecord;
 import com.example.socket.entity.ChatRecordVO;
 import com.example.socket.entity.PageInfo;
 import com.example.socket.utils.BaiduPushUtil;
+import com.example.socket.utils.IpAddrUtil;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import org.springframework.beans.BeanUtils;
@@ -49,16 +50,7 @@ public class ChatRecordService {
         record.setSendMsg(msg);
         record.setIpAddr(ip);
         record.setUid(uid);
-        String address = "获取失败";
-        if ("127.0.0.1".equals(ip)||"localhost".equals(ip)){
-            address = "本地";
-        }else {
-            try {
-                address = BaiduPushUtil.getAddress(ip,BaiduPushUtil.BAIDU_APK);
-            }catch (Exception e){
-                address =  "获取失败";
-            }
-        }
+        String address = IpAddrUtil.getAddressByIp(ip);
         record.setCity(address);
         chatRecordMapper.insert(record);
     }
