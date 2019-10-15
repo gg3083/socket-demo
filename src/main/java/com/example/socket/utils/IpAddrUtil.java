@@ -16,9 +16,12 @@ public class IpAddrUtil {
         String address = null;
         if ("127.0.0.1".equals(ip)||"localhost".equals(ip)){
             address = "本地";
-        }else {
+        }else if ("172.17.0.1".equals(ip) || ip.startsWith("172.17.0")){
+            address = "容器内部";
+        }
+        else {
             try {
-                address = BaiduPushUtil.getAddress(ip,BaiduPushUtil.BAIDU_APK);
+                address = BaiduPushUtil.getAddress(ip);
             }catch (Exception e){
                 address =  "获取失败";
             }

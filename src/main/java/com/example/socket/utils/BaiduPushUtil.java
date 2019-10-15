@@ -26,7 +26,7 @@ public class BaiduPushUtil extends RestClientUtil {
 
     private static final String GET_LOCATION_BY_IP = "{0}?ak={1}&coor=gcj02&ip={2}";
     private static final String BAIDU_PUSH_URL_PATTERN = "{0}{1}?site={2}&token={3}";
-    public static final String BAIDU_APK="AMI5jvYpiQy97bbGxySMElmtRiZ4jHRg";
+    public static final String BAIDU_APK="flhdQHIDRiO9kbIn8TUlluB1W4qCzPB9";
     /**
      * 通过百度API 根据ip获取定位的接口
      */
@@ -43,9 +43,9 @@ public class BaiduPushUtil extends RestClientUtil {
     }
 
 
-    public static String getAddress(String ip,String key){
+    public static String getAddress(String ip){
 
-        String locationJson = RestClientUtil.get(getLocationByIp(ip, key));
+        String locationJson = RestClientUtil.get(getLocationByIp(ip,BAIDU_APK));
         JSONObject localtionContent = JSONObject.parseObject(locationJson).getJSONObject("content");
 
         if (localtionContent.containsKey("address_detail")) {
