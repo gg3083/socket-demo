@@ -3,14 +3,11 @@ package com.example.socket.controller;
 import com.alibaba.fastjson.JSONObject;
 import com.example.socket.service.ChatRecordService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
@@ -25,7 +22,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @Slf4j
 public class MessageWebSocket {
 
-    private static final Logger logger = LoggerFactory.getLogger(MessageWebSocket.class);
 
     /**
      * 静态变量，用来记录当前在线连接数。应该把它设计成线程安全的。
@@ -65,7 +61,7 @@ public class MessageWebSocket {
      * */
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userId) {
-        System.out.println(userId);
+        log.info("连接成功，当前连接用户 {}",userId);
         try {
             this.session = session;
             String sessionId = session.getId();
@@ -84,8 +80,7 @@ public class MessageWebSocket {
                 addOnlineCount();           //在线数加1
             }
         }catch (Exception e){
-            logger.error("连接失败");
-            e.printStackTrace();
+            log.error("连接失败 {}",e.getMessage());
         }
     }
 
@@ -98,14 +93,16 @@ public class MessageWebSocket {
         //移除userId和sessionId的关系
         String userId = sessionUserMap.get(sessionId);
         sessionUserMap.remove(sessionId);
-        if(userId != null) {
-            ConcurrentLinkedQueue<String> sessionIds = userSessionMap.get(userId);
-            if(sessionIds != null) {
-                sessionIds.remove(sessionId);
-                if (sessionIds.size() == 0) {
-                    userSessionMap.remove(userId);
-                }
-            }
+        if( StringUtils.isEmpty(userId)) {
+            return;
+        }
+        ConcurrentLinkedQueue<String> sessionIds = userSessionMap.get(userId);
+        if(StringUtils.isEmpty(sessionIds)) {
+            return;
+        }
+        sessionIds.remove(sessionId);
+        if (sessionIds.size() == 0) {
+            userSessionMap.remove(userId);
         }
         //移除sessionId和websocket的关系
         if (websocketMap.containsKey(sessionId)) {
@@ -121,11 +118,11 @@ public class MessageWebSocket {
      **/
     @OnMessage
     public void onMessage(String messageStr, Session session, @PathParam("userId") String userId) throws IOException {
-        System.err.println(messageStr);
-        System.err.println(userId);
+        log.info("当前接收到的消息为 {}" ,messageStr);
         JSONObject object = JSONObject.parseObject(messageStr);
         Object msg = object.get("msg");
         Object user = object.get("user");
+        log.info(" {} 当前发送的消息为 {}",user ,msg);
         chatRecordService.save(String.valueOf(user),String.valueOf(msg),getRemoteAddress(session),userId);
     }
 
@@ -136,7 +133,7 @@ public class MessageWebSocket {
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        logger.error(error.toString());
+        log.error(error.getMessage());
     }
 
 
@@ -144,25 +141,20 @@ public class MessageWebSocket {
      * 实现服务器主动推送
      */
     public void sendMessage(String message, String toUserId) throws IOException {
-        if(!StringUtils.isEmpty(message.trim())){
-            userSessionMap.forEach( (key,value) ->{
-                System.err.println(key + "_" +value);
-                ConcurrentLinkedQueue<String> sessionIds = value;
-                if(sessionIds != null) {
-                    for (String sessionId : sessionIds) {
-                        MessageWebSocket socket = websocketMap.get(sessionId);
-                        try {
-                            socket.session.getBasicRemote().sendText(message);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
+        if(StringUtils.isEmpty(message.trim())){
+            return;
+        }
+        userSessionMap.forEach( (key,value) ->{
+            log.info("当前需要发送的用户为 {},session为 {}" ,key,value );
+            value.forEach( session -> {
+                MessageWebSocket socket = websocketMap.get(session);
+                try {
+                    socket.session.getBasicRemote().sendText(message);
+                } catch (IOException e) {
+                    log.error("当前发送消息异常 {} ",e.getMessage());
                 }
             });
-
-        }else{
-            logger.error("未找到接收用户连接，该用户未连接或已断开");
-        }
+        });
     }
 
     public void sendMessage(String message, Session session) throws IOException {
@@ -180,14 +172,14 @@ public class MessageWebSocket {
     */
     public static synchronized void addOnlineCount() {
         MessageWebSocket.onlineCount++;
-        System.err.println("当前在线人数"+onlineCount);
+        log.info("有人加入，当前在线人数 {}",onlineCount);
     }
     /**
     *在线人数减一
     */
     public static synchronized void subOnlineCount() {
         MessageWebSocket.onlineCount--;
-        System.err.println("当前在线人数"+onlineCount);
+        log.info("有人退出，当前在线人数 {}",onlineCount);
     }
 
     public static String getRemoteAddress(Session session) {
@@ -200,10 +192,10 @@ public class MessageWebSocket {
 //		InetSocketAddress addr = (InetSocketAddress) getFieldInstance(async,"base#sos#socketWrapper#socket#sc#remoteAddress");
         //在Tomcat 8.5以上版本有效
         InetSocketAddress addr = (InetSocketAddress) getFieldInstance(async,"base#socketWrapper#socket#sc#remoteAddress");
-        logger.info("addr: {}",addr);
-        logger.info("addr-string: {}",addr.toString());
-        logger.info("addr-address: {}",addr.getAddress());
-        logger.info("addr-hostname: {}",addr.getAddress().getHostName());
+        log.info("addr: {}",addr);
+        log.info("addr-string: {}",addr.toString());
+        log.info("addr-address: {}",addr.getAddress());
+        log.info("addr-hostname: {}",addr.getAddress().getHostName());
         return addr == null?"127.0.0.1": addr.getAddress().getHostAddress();
     }
 
